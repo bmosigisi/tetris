@@ -4,14 +4,33 @@
   margin-left: auto;
   margin-right: auto;
   margin-top: 40px;
-  border: 1px #000 solid;
+  border: 1px #3B3176 solid;
 }
 #canvas {
   float: left;
-  border: 1px #000 solid;
+  border: 1px #3B3176 solid;
   display: block;
 }
 #game-controls {
   height: 540px;
-  border: 1px #000 solid;
+  width: 196px;
+  float: right;
+  border: 1px #3B3176 solid;
+}
+#next-piece {
+  border-bottom: 1px #3B3176 solid;
+}
+#control-buttons {
+  width: 100%;
+  padding-top: 80px;
+}
+button {
+  width: 80px;
+  height: 30px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+  color: white;
+  background-color: #3B3176;
+  border: none;
 }
