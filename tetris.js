@@ -115,8 +115,12 @@ window.onload = (function() {
   }
 
   function startGame(timeStamp) {
-    drawNext(nextPiece);
-    // window.requestAnimationFrame(startGame);
+    window.requestAnimationFrame(startGame);
+  }
+
+  function drawCurrent() {
+    var ctx = document.getElementById('canvas').getContext('2d');
+    drawPiece(ctx, currentPiece, 90, 0, 0);
   }
 
   function drawNext(nextPiece) {
