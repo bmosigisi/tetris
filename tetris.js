@@ -50,8 +50,8 @@ window.onload = (function() {
       color: 'cyan'
     },
     o: {
-      rotation: [0xcc00, 0xcc00, 0xcc00, 0xcc00],
-      color: 'yellow'
+      rotation: [0x0660, 0x0660, 0x0660, 0x0660],
+      color: 'gold'
     },
     t: {
       rotation: [0x4640, 0x0e40, 0x4c40, 0x04e0],
@@ -116,12 +116,13 @@ window.onload = (function() {
 
   function startGame(timeStamp) {
     drawNext(nextPiece);
-    window.requestAnimationFrame(startGame);
+    // window.requestAnimationFrame(startGame);
   }
 
   function drawNext(nextPiece) {
     var ctx = document.getElementById('next-piece').getContext('2d');
-    drawPiece(ctx, nextPiece, 20, 20, 0);
+    ctx.clearRect(0, 0, 196, 200);
+    drawPiece(ctx, nextPiece, 30, 35, 0);
   }
 
   function drawPiece(context, piece, x, y, rotation_index) {
@@ -131,8 +132,19 @@ window.onload = (function() {
     if (rotation_index) {
       rindex = rotation_index;
     }
-
-    drawBlock(context, 40, 40, piece.color);
+    rotation = piece.rotation[rindex];
+    posx = x;
+    while (rotation !== 0) {
+      if (0x8000 & rotation) {
+        drawBlock(context, x, y, piece.color);
+      }
+      rotation = rotation << 1;
+      x += 30;
+      if (x - posx === 120) {
+        x = posx + 0;
+        y += 30;
+      }
+    }
   }
 
   function drawBlock(context, x, y, color) {
