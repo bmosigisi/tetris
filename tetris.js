@@ -133,24 +133,25 @@ window.onload = (function() {
 
   function startGame(timeStamp) {
     // update user actions here.
-    if (timeStamp - beginningTime > 500) {
+    if (timeStamp - beginningTime > 100) {
       beginningTime = timeStamp;
+      checkCollisions();
       drop();
     }
     window.requestAnimationFrame(startGame);
   }
 
   function drawCurrent() {
+    currentPiece.state = [90, 0, 0];
     var pieceArray = convertRepresentation(currentPiece);
     // the current position of the piece, x,y,r-index coordinates.
-    currentPiece.state = [90, 0, 0];
     drawPiece(ctx, currentPiece, pieceArray);
   }
 
   function drawNext() {
     ctxNext.clearRect(0, 0, 196, 200);
+      nextPiece.state = [30, 35, 0];
     var pieceArray = convertRepresentation(nextPiece);
-    nextPiece.state = [30, 35, 0];
     drawPiece(ctxNext, nextPiece, pieceArray);
   }
 
@@ -200,13 +201,27 @@ window.onload = (function() {
   }
 
   function checkCollisions() {
-    if (currentPiece.state[1] > 420) {
+    if (checkPieceIsOutOfBounds()) {
       currentPiece = nextPiece;
-      currentPiece.state = [90, 0, 0];
       nextPiece = getRandomBlock();
-      nextPiece.state = [30, 35, 0];
       drawCurrent();
       drawNext();
+    }
+  }
+
+  function checkPieceIsOutOfBounds() {
+    var pieceArray = convertRepresentation(currentPiece);
+    for (var i = 3; i >= 0; i--) {
+      for (var j = 0; j < 4; j++) {
+        // find the lowest cell in the piece
+        if (pieceArray[i][j]) {
+          // check if current cell is within field
+          if ((i * 30) + currentPiece.state[1] >= 510) {
+            return true;
+          }
+          return false;
+        }
+      }
     }
   }
 
@@ -216,7 +231,6 @@ window.onload = (function() {
     currentPiece.state[1] += 30;
     var pieceArray = convertRepresentation(currentPiece);
     drawPiece(ctx, currentPiece, pieceArray);
-    checkCollisions();
   }
 
 }());
