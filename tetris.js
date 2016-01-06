@@ -178,7 +178,10 @@ window.onload = (function() {
 
   function checkCollisions() {
     if (currentPiece.state[1] > 420) {
-      init();
+      currentPiece = nextPiece;
+      nextPiece = getRandomBlock();
+      drawCurrent();
+      drawNext();
     }
   }
 
