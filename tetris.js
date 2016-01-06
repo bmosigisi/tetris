@@ -71,6 +71,18 @@ window.onload = (function() {
   var gameScenes = ['control', 'play', 'pause', 'end'];
   var currentGameScene = gameScenes[0];
   var currentPiece, nextPiece;
+  var beginningTime;
+  var ctxNext = document.getElementById('next-piece').getContext('2d');
+  var grid = new Array(18);
+
+  (function(){
+    for(var i = 0; i < 18; i++) {
+      grid[i] = new Array(10);
+      for(var j = 0; j < 10; j++) {
+        grid[i][j] = 0;
+      }
+    }
+  })();
 
   var suspendGameArea = function() {
     ctx.globalAlpha = 0.2;
@@ -106,27 +118,35 @@ window.onload = (function() {
   document.getElementById('start-button').onclick = function() {
     // start game here
     init();
-    startGame();
+    beginningTime = performance.now();
+    startGame(beginningTime);
   };
 
   function init() {
     currentPiece = getRandomBlock();
     nextPiece = getRandomBlock();
+    drawCurrent();
+    drawNext();
   }
 
   function startGame(timeStamp) {
+    // update user actions here.
+    if (timeStamp - beginningTime > 500) {
+      beginningTime = timeStamp;
+      drop();
+    }
     window.requestAnimationFrame(startGame);
   }
 
   function drawCurrent() {
-    var ctx = document.getElementById('canvas').getContext('2d');
     drawPiece(ctx, currentPiece, 90, 0, 0);
+    // the current position of the piece, x,y,r-index coordinates.
+    currentPiece.state = [90, 0, 0];
   }
 
-  function drawNext(nextPiece) {
-    var ctx = document.getElementById('next-piece').getContext('2d');
-    ctx.clearRect(0, 0, 196, 200);
-    drawPiece(ctx, nextPiece, 30, 35, 0);
+  function drawNext() {
+    ctxNext.clearRect(0, 0, 196, 200);
+    drawPiece(ctxNext, nextPiece, 30, 35, 0);
   }
 
   function drawPiece(context, piece, x, y, rotation_index) {
@@ -153,7 +173,22 @@ window.onload = (function() {
 
   function drawBlock(context, x, y, color) {
     context.fillStyle = color;
-    context.fillRect(x+1, y+1, 28, 28)
+    context.fillRect(x + 1, y + 1, 28, 28)
+  }
+
+  function checkCollisions() {
+    if (currentPiece.state[1] > 420) {
+      init();
+    }
+  }
+
+  function drop() {
+    ctx.clearRect(currentPiece.state[0],
+      currentPiece.state[1], 120, 120);
+    currentPiece.state[1] += 30;
+    drawPiece(ctx, currentPiece, currentPiece.state[0],
+      currentPiece.state[1], currentPiece.state[2]);
+    checkCollisions();
   }
 
 }());
