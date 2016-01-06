@@ -125,6 +125,8 @@ window.onload = (function() {
   function init() {
     currentPiece = getRandomBlock();
     nextPiece = getRandomBlock();
+    currentPiece.state = [90, 0, 0];
+    nextPiece.state = [30, 35, 0];
     drawCurrent();
     drawNext();
   }
@@ -139,34 +141,55 @@ window.onload = (function() {
   }
 
   function drawCurrent() {
-    drawPiece(ctx, currentPiece, 90, 0, 0);
+    var pieceArray = convertRepresentation(currentPiece);
     // the current position of the piece, x,y,r-index coordinates.
     currentPiece.state = [90, 0, 0];
+    drawPiece(ctx, currentPiece, pieceArray);
   }
 
   function drawNext() {
     ctxNext.clearRect(0, 0, 196, 200);
-    drawPiece(ctxNext, nextPiece, 30, 35, 0);
+    var pieceArray = convertRepresentation(nextPiece);
+    nextPiece.state = [30, 35, 0];
+    drawPiece(ctxNext, nextPiece, pieceArray);
   }
 
-  function drawPiece(context, piece, x, y, rotation_index) {
-    // Draws a piece in a 120*120 grid, in a certain orientation.
-    rindex = 0;
-    // default rotation index is 0.
-    if (rotation_index) {
-      rindex = rotation_index;
+  // convert a piece representation in hex to 4 by 4 array
+  function convertRepresentation(piece) {
+    var pieceArray = new Array(4);
+    var rotation = piece.rotation[piece.state[2]];
+    var xcount = 0, ycount = 0;
+    // initialize piece array to 0's.
+    for(var i = 0; i < 4; i++) {
+      pieceArray[i] = new Array(4);
+      for(var j = 0; j < 4; j++) {
+        pieceArray[i][j] = 0;
+      }
     }
-    rotation = piece.rotation[rindex];
-    posx = x;
     while (rotation !== 0) {
       if (0x8000 & rotation) {
-        drawBlock(context, x, y, piece.color);
+        pieceArray[ycount][xcount] = 1;
       }
       rotation = rotation << 1;
-      x += 30;
-      if (x - posx === 120) {
-        x = posx + 0;
-        y += 30;
+      xcount++;
+      if(xcount === 4) {
+        xcount = 0;
+        ycount++;
+      }
+    }
+
+    return pieceArray;
+  }
+
+  function drawPiece(context, piece, pieceArray) {
+    rotation = piece.rotation[piece.state[2]];
+    for (var i = 0; i < 4; i++) {
+      for (var j = 0; j < 4; j++) {
+        if (pieceArray[i][j]) {
+          x = (j * 30) + piece.state[0];
+          y = (i * 30) + piece.state[1];
+          drawBlock(context, x, y, piece.color);
+        }
       }
     }
   }
@@ -179,7 +202,9 @@ window.onload = (function() {
   function checkCollisions() {
     if (currentPiece.state[1] > 420) {
       currentPiece = nextPiece;
+      currentPiece.state = [90, 0, 0];
       nextPiece = getRandomBlock();
+      nextPiece.state = [30, 35, 0];
       drawCurrent();
       drawNext();
     }
@@ -189,8 +214,8 @@ window.onload = (function() {
     ctx.clearRect(currentPiece.state[0],
       currentPiece.state[1], 120, 120);
     currentPiece.state[1] += 30;
-    drawPiece(ctx, currentPiece, currentPiece.state[0],
-      currentPiece.state[1], currentPiece.state[2]);
+    var pieceArray = convertRepresentation(currentPiece);
+    drawPiece(ctx, currentPiece, pieceArray);
     checkCollisions();
   }
 
