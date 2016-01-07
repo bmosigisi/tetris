@@ -70,19 +70,9 @@ window.onload = (function() {
 
   var ctx = document.getElementById('canvas').getContext('2d');
   var ctxNext = document.getElementById('next-piece').getContext('2d');
-  var grid = new Array(18);
-  var beginningTime, actionChanged, currentPiece, nextPiece;
+  var beginningTime, actionChanged, currentPiece, nextPiece, nextChanged;
   // actions: up, right, left, down.
   var actions = new Array(4);
-
-  (function() {
-    for (var i = 0; i < 18; i++) {
-      grid[i] = new Array(10);
-      for (var j = 0; j < 10; j++) {
-        grid[i][j] = 0;
-      }
-    }
-  })();
 
   // Get a random block from the selection.
   var getRandomBlock = function() {
@@ -134,7 +124,7 @@ window.onload = (function() {
       updateActions();
     }
     if (timeStamp - beginningTime >= 1000) {
-      if (!checkCollisions()) {
+      if (checkCollisions()) {
         drop();
       }
     }
@@ -168,19 +158,6 @@ window.onload = (function() {
     }
 
     return pieceArray;
-  }
-
-  function drawPiece(context, piece, pieceArray) {
-    rotation = piece.rotation[piece.state[2]];
-    for (var i = 0; i < 4; i++) {
-      for (var j = 0; j < 4; j++) {
-        if (pieceArray[i][j]) {
-          x = (j * 30) + piece.state[0];
-          y = (i * 30) + piece.state[1];
-          drawBlock(context, x, y, piece.color);
-        }
-      }
-    }
   }
 
   // Draw a single block, somewhere on the grid.
@@ -243,7 +220,6 @@ window.onload = (function() {
     if (!checkBounds()) {
       currentPiece.state = temp;
     }
-    console.log('Current piece state: ', currentPiece.state);
     resetActions();
     actionChanged = false;
   }
@@ -270,7 +246,7 @@ window.onload = (function() {
     rightMostIndex = 0;
     for (var m = 3; m >= 0; m--) {
       for (var n = 3; n >= 0; n--) {
-        if (pieceArray[m][n] > rightMostIndex) {
+        if (pieceArray[m][n] && n > rightMostIndex) {
           rightMostIndex = n;
         }
       }
@@ -278,6 +254,7 @@ window.onload = (function() {
     if ((rightMostIndex * 30) + currentPiece.state[0] + 30 > 300) {
       return false;
     }
+    console.log('current state: ', currentPiece.state);
 
     // get left most piece.
     leftMostIndex = 3;
@@ -335,12 +312,38 @@ window.onload = (function() {
   }
 
   /**
+   * Draw the current piece.
+   */
+  function drawCurrent(color) {
+    var pieceArray = convertRepresentation(currentPiece);
+    for (var i = 0; i < 4; i++) {
+      for (var j = 0; j < 4; j++) {
+        if (pieceArray[i][j]) {
+          var x = currentPiece.state[0] + (j * 30);
+          var y = currentPiece.state[1] + (i * 30);
+          drawBlock(ctx, x, y, color);
+        } 
+      }
+    }
+  }
+
+  /**
+   * Draw the next piece.
+   */
+  function drawNext() {
+
+  }
+
+  /**
    * Draw all the cells in the entire grid.
    * Draws both the main grid and the pieces.
    */
   function draw() {
-    var pieceArray = convertRepresentation(currentPiece);
-    drawPiece(ctx, currentPiece, pieceArray);
+    // draw current piece.
+    drawCurrent(currentPiece.color);
+    if (nextChanged) {
+      drawNext();
+    }
   }
 
 }());
