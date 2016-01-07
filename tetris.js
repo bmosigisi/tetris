@@ -27,7 +27,10 @@ window.onload = (function() {
       };
   }());
 
-  // Tetrominoes block variables
+  /** 
+   * Tetrominoes block variables
+   * Should also store a state property tracking x, y, and rotation index.
+   */
   var blocks = {
     l: {
       rotation: [0x4460, 0x0740, 0x6220, 0x02e0],
@@ -65,8 +68,7 @@ window.onload = (function() {
     frequency: [4, 4, 4, 4, 4, 4, 4]
   };
 
-  var canvas = document.getElementById('canvas');
-  var ctx = canvas.getContext('2d');
+  var ctx = document.getElementById('canvas').getContext('2d');
   var ctxNext = document.getElementById('next-piece').getContext('2d');
   var grid = new Array(18);
   var beginningTime, actionChanged, currentPiece, nextPiece;
@@ -110,7 +112,7 @@ window.onload = (function() {
 
   document.getElementById('start-button').onclick = function() {
     init();
-    var beginningTime = perfomance.now();
+    var beginningTime = performance.now();
     startGame(beginningTime);
   };
 
@@ -121,16 +123,18 @@ window.onload = (function() {
    */
   function init() {
     currentPiece = getRandomBlock();
+    currentPiece.state = [90, 0, 0];
     nextPiece = getRandomBlock();
     document.onkeydown = getPressedKey;
     actionChanged = false;
   }
 
   function startGame(timeStamp) {
-    updateActions();
+    if (actionChanged) {
+      updateActions();
+    }
     if (timeStamp - beginningTime >= 1000) {
-      var prompt = checkCollisions();
-      if (prompt) {
+      if (!checkCollisions()) {
         drop();
       }
     }
@@ -193,12 +197,16 @@ window.onload = (function() {
     e = e || window.event;
 
     if (e.keyCode == '38') {
+      // up arrow
       actions[0] = 1;
     } else if (e.keyCode == '40') {
+      // down arrow
       actions[2] = 1;
     } else if (e.keyCode == '37') {
+      // left arrow
       actions[3] = 1;
     } else if (e.keyCode == '39') {
+      // right arrow
       actions[1] = 1;
     }
     actionChanged = true;
@@ -215,21 +223,115 @@ window.onload = (function() {
    * Receive the actions from the player and update
    * the current piece.
    */
-  function updateActions() {
-    if (actionChanged) {
-      // Loop through actions array and update current piece.
-      resetActions();
-      actionChanged = false;
+  function updateActions() {    
+    // create a temporary copy of the current piece.
+    var temp = currentPiece.state.slice(0, 4);
+    // Loop through actions array and update current piece position.
+    for (var i = 0; i < 4; i++) {
+      if (actions[i]) {
+        if (i === 0) {
+          rotate();
+        } else if (i === 1) {
+          currentPiece.state[0] += 30;
+        } else if (i === 2) {
+          currentPiece.state[1] += 30;
+        } else if (i === 3) {
+          currentPiece.state[0] -= 30;
+        }
+      }
     }
+    if (!checkBounds()) {
+      currentPiece.state = temp;
+    }
+    console.log('Current piece state: ', currentPiece.state);
+    resetActions();
+    actionChanged = false;
+  }
+
+  /**
+   * Rotate the current piece.
+   * Involves changing the rotation index.
+   */
+  function rotate() {
+    if (currentPiece.state[2] === 3) {
+      currentPiece.state[2] = 0;
+    } else {
+      currentPiece.state[2]++;
+    }
+  }
+
+  /**
+   * Check whether the current piece is within the
+   * bounds of the playing field.
+   * Return true if piece is within bounds.
+   */
+  function checkBounds() {
+    var pieceArray = convertRepresentation(currentPiece);
+    rightMostIndex = 0;
+    for (var m = 3; m >= 0; m--) {
+      for (var n = 3; n >= 0; n--) {
+        if (pieceArray[m][n] > rightMostIndex) {
+          rightMostIndex = n;
+        }
+      }
+    }
+    if ((rightMostIndex * 30) + currentPiece.state[0] + 30 > 300) {
+      return false;
+    }
+
+    // get left most piece.
+    leftMostIndex = 3;
+    for (var i = 0; i < 4; i++) {
+      if (pieceArray[i].indexOf(1) < leftMostIndex &&
+        pieceArray[i].indexOf(1) !== -1) {
+        leftMostIndex = pieceArray[i].indexOf(1);
+      }
+    }
+    if ((leftMostIndex * 30) + currentPiece.state[0] < 0) {
+      return false;
+    }
+
+    return checkBottomBounds();
+  }
+
+  /**
+   * Check bottom most bounds of current piece.
+   * Returns true if piece is still within.
+   */
+  function checkBottomBounds()
+  {
+    var pieceArray = convertRepresentation(currentPiece);
+    // get bottom most piece.
+    for (i = 3; i >= 0; i--) {
+      for (var j = 0; j < 4; j++) {
+        // find the lowest cell in the piece
+        if (pieceArray[i][j]) {
+          // check if current cell is within field
+          if ((i * 30) + currentPiece.state[1] >= 540) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
   }
 
   /**
    * Check whether the current piece is bound to collide
    * with an existing piece in the next drop.
    * Returns true if collision will occur.
+   * Also swaps current with next piece incase of collision.
    */
   function checkCollisions() {
+    return checkBottomBounds();
+  }
 
+  /**
+   * Drop the current piece down once.
+   */
+  function drop() {
+    currentPiece.state[1] += 30;
   }
 
   /**
@@ -237,7 +339,8 @@ window.onload = (function() {
    * Draws both the main grid and the pieces.
    */
   function draw() {
-
+    var pieceArray = convertRepresentation(currentPiece);
+    drawPiece(ctx, currentPiece, pieceArray);
   }
 
 }());
