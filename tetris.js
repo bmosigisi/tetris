@@ -102,7 +102,7 @@ window.onload = (function() {
 
   document.getElementById('start-button').onclick = function() {
     init();
-    var beginningTime = performance.now();
+    beginningTime = performance.now();
     startGame(beginningTime);
   };
 
@@ -114,6 +114,7 @@ window.onload = (function() {
   function init() {
     currentPiece = getRandomBlock();
     currentPiece.state = [90, 0, 0];
+    currentPiece.previousState = [90, 0, 0];
     nextPiece = getRandomBlock();
     document.onkeydown = getPressedKey;
     actionChanged = false;
@@ -125,6 +126,7 @@ window.onload = (function() {
     }
     if (timeStamp - beginningTime >= 1000) {
       if (checkCollisions()) {
+        beginningTime = timeStamp;
         drop();
       }
     }
@@ -158,12 +160,6 @@ window.onload = (function() {
     }
 
     return pieceArray;
-  }
-
-  // Draw a single block, somewhere on the grid.
-  function drawBlock(context, x, y, color) {
-    context.fillStyle = color;
-    context.fillRect(x + 1, y + 1, 28, 28)
   }
 
   /**
@@ -200,7 +196,7 @@ window.onload = (function() {
    * Receive the actions from the player and update
    * the current piece.
    */
-  function updateActions() {    
+  function updateActions() {
     // create a temporary copy of the current piece.
     var temp = currentPiece.state.slice(0, 4);
     // Loop through actions array and update current piece position.
@@ -275,8 +271,7 @@ window.onload = (function() {
    * Check bottom most bounds of current piece.
    * Returns true if piece is still within.
    */
-  function checkBottomBounds()
-  {
+  function checkBottomBounds() {
     var pieceArray = convertRepresentation(currentPiece);
     // get bottom most piece.
     for (i = 3; i >= 0; i--) {
@@ -284,7 +279,7 @@ window.onload = (function() {
         // find the lowest cell in the piece
         if (pieceArray[i][j]) {
           // check if current cell is within field
-          if ((i * 30) + currentPiece.state[1] >= 540) {
+          if ((i * 30) + currentPiece.state[1] >= 510) {
             return false;
           }
         }
@@ -311,18 +306,29 @@ window.onload = (function() {
     currentPiece.state[1] += 30;
   }
 
+  // Draw a single block, somewhere on the grid.
+  function drawColourBlock(context, x, y, color) {
+    context.fillStyle = color;
+    context.fillRect(x + 1, y + 1, 28, 28);
+  }
+
+  // Draw a single block, somewhere on the grid.
+  function clearBlock(context, x, y) {
+    context.clearRect(x, y, 30, 30);
+  }
+
   /**
    * Draw the current piece.
    */
-  function drawPiece(x, y, color) {
+  function drawPiece(x, y, color, drawer) {
     var pieceArray = convertRepresentation(currentPiece);
     for (var i = 0; i < 4; i++) {
       for (var j = 0; j < 4; j++) {
         if (pieceArray[i][j]) {
-          var x = x + (j * 30);
-          var y = y + (i * 30);
-          drawBlock(ctx, x, y, color);
-        } 
+          var tempx = (j * 30) + x;
+          var tempy = (i * 30) + y;
+          drawer(ctx, tempx, tempy, color);
+        }
       }
     }
   }
@@ -339,9 +345,13 @@ window.onload = (function() {
    * Draws both the main grid and the pieces.
    */
   function draw() {
-    
+    // Clear the previous piece location
+    drawPiece(currentPiece.previousState[0],
+     currentPiece.previousState[1], 'white', clearBlock);
     // draw current piece.
-    drawPiece(currentPiece[0], currentPiece[1], currentPiece.color);
+    drawPiece(currentPiece.state[0], currentPiece.state[1],
+      currentPiece.color, drawColourBlock);
+    currentPiece.previousState = currentPiece.state.slice(0, 3);
     if (nextChanged) {
       drawNext();
     }
