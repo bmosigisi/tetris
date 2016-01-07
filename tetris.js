@@ -314,13 +314,13 @@ window.onload = (function() {
   /**
    * Draw the current piece.
    */
-  function drawCurrent(color) {
+  function drawPiece(x, y, color) {
     var pieceArray = convertRepresentation(currentPiece);
     for (var i = 0; i < 4; i++) {
       for (var j = 0; j < 4; j++) {
         if (pieceArray[i][j]) {
-          var x = currentPiece.state[0] + (j * 30);
-          var y = currentPiece.state[1] + (i * 30);
+          var x = x + (j * 30);
+          var y = y + (i * 30);
           drawBlock(ctx, x, y, color);
         } 
       }
@@ -339,8 +339,9 @@ window.onload = (function() {
    * Draws both the main grid and the pieces.
    */
   function draw() {
+    
     // draw current piece.
-    drawCurrent(currentPiece.color);
+    drawPiece(currentPiece[0], currentPiece[1], currentPiece.color);
     if (nextChanged) {
       drawNext();
     }
