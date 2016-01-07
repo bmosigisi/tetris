@@ -65,29 +65,22 @@ window.onload = (function() {
     frequency: [4, 4, 4, 4, 4, 4, 4]
   };
 
-
   var canvas = document.getElementById('canvas');
   var ctx = canvas.getContext('2d');
-  var gameScenes = ['control', 'play', 'pause', 'end'];
-  var currentGameScene = gameScenes[0];
-  var currentPiece, nextPiece;
-  var beginningTime;
   var ctxNext = document.getElementById('next-piece').getContext('2d');
   var grid = new Array(18);
+  var beginningTime, actionChanged, currentPiece, nextPiece;
+  // actions: up, right, left, down.
+  var actions = new Array(4);
 
-  (function(){
-    for(var i = 0; i < 18; i++) {
+  (function() {
+    for (var i = 0; i < 18; i++) {
       grid[i] = new Array(10);
-      for(var j = 0; j < 10; j++) {
+      for (var j = 0; j < 10; j++) {
         grid[i][j] = 0;
       }
     }
   })();
-
-  var suspendGameArea = function() {
-    ctx.globalAlpha = 0.2;
-    ctx.fillRect(0, 0, 300, 540);
-  };
 
   // Get a random block from the selection.
   var getRandomBlock = function() {
@@ -116,54 +109,45 @@ window.onload = (function() {
   };
 
   document.getElementById('start-button').onclick = function() {
-    // start game here
     init();
-    beginningTime = performance.now();
+    var beginningTime = perfomance.now();
     startGame(beginningTime);
   };
 
+  /**
+   * Initialize the game. 
+   * Create a current and next piece.
+   * Add keydown event listener.
+   */
   function init() {
     currentPiece = getRandomBlock();
     nextPiece = getRandomBlock();
-    currentPiece.state = [90, 0, 0];
-    nextPiece.state = [30, 35, 0];
-    drawCurrent();
-    drawNext();
+    document.onkeydown = getPressedKey;
+    actionChanged = false;
   }
 
   function startGame(timeStamp) {
-    // update user actions here.
-    if (timeStamp - beginningTime > 100) {
-      beginningTime = timeStamp;
-      checkCollisions();
-      drop();
+    updateActions();
+    if (timeStamp - beginningTime >= 1000) {
+      var prompt = checkCollisions();
+      if (prompt) {
+        drop();
+      }
     }
+    draw();
     window.requestAnimationFrame(startGame);
-  }
-
-  function drawCurrent() {
-    currentPiece.state = [90, 0, 0];
-    var pieceArray = convertRepresentation(currentPiece);
-    // the current position of the piece, x,y,r-index coordinates.
-    drawPiece(ctx, currentPiece, pieceArray);
-  }
-
-  function drawNext() {
-    ctxNext.clearRect(0, 0, 196, 200);
-      nextPiece.state = [30, 35, 0];
-    var pieceArray = convertRepresentation(nextPiece);
-    drawPiece(ctxNext, nextPiece, pieceArray);
   }
 
   // convert a piece representation in hex to 4 by 4 array
   function convertRepresentation(piece) {
     var pieceArray = new Array(4);
     var rotation = piece.rotation[piece.state[2]];
-    var xcount = 0, ycount = 0;
+    var xcount = 0,
+      ycount = 0;
     // initialize piece array to 0's.
-    for(var i = 0; i < 4; i++) {
+    for (var i = 0; i < 4; i++) {
       pieceArray[i] = new Array(4);
-      for(var j = 0; j < 4; j++) {
+      for (var j = 0; j < 4; j++) {
         pieceArray[i][j] = 0;
       }
     }
@@ -173,7 +157,7 @@ window.onload = (function() {
       }
       rotation = rotation << 1;
       xcount++;
-      if(xcount === 4) {
+      if (xcount === 4) {
         xcount = 0;
         ycount++;
       }
@@ -195,42 +179,65 @@ window.onload = (function() {
     }
   }
 
+  // Draw a single block, somewhere on the grid.
   function drawBlock(context, x, y, color) {
     context.fillStyle = color;
     context.fillRect(x + 1, y + 1, 28, 28)
   }
 
+  /**
+   * Get the keys pressed by the user, and update the actions
+   * array.
+   */
+  function getPressedKey(e) {
+    e = e || window.event;
+
+    if (e.keyCode == '38') {
+      actions[0] = 1;
+    } else if (e.keyCode == '40') {
+      actions[2] = 1;
+    } else if (e.keyCode == '37') {
+      actions[3] = 1;
+    } else if (e.keyCode == '39') {
+      actions[1] = 1;
+    }
+    actionChanged = true;
+  }
+
+  // Set all actions to 0.
+  function resetActions() {
+    for (var i = 0; i < 4; i++) {
+      actions[i] = 0;
+    }
+  }
+
+  /**
+   * Receive the actions from the player and update
+   * the current piece.
+   */
+  function updateActions() {
+    if (actionChanged) {
+      // Loop through actions array and update current piece.
+      resetActions();
+      actionChanged = false;
+    }
+  }
+
+  /**
+   * Check whether the current piece is bound to collide
+   * with an existing piece in the next drop.
+   * Returns true if collision will occur.
+   */
   function checkCollisions() {
-    if (checkPieceIsOutOfBounds()) {
-      currentPiece = nextPiece;
-      nextPiece = getRandomBlock();
-      drawCurrent();
-      drawNext();
-    }
+
   }
 
-  function checkPieceIsOutOfBounds() {
-    var pieceArray = convertRepresentation(currentPiece);
-    for (var i = 3; i >= 0; i--) {
-      for (var j = 0; j < 4; j++) {
-        // find the lowest cell in the piece
-        if (pieceArray[i][j]) {
-          // check if current cell is within field
-          if ((i * 30) + currentPiece.state[1] >= 510) {
-            return true;
-          }
-          return false;
-        }
-      }
-    }
-  }
+  /**
+   * Draw all the cells in the entire grid.
+   * Draws both the main grid and the pieces.
+   */
+  function draw() {
 
-  function drop() {
-    ctx.clearRect(currentPiece.state[0],
-      currentPiece.state[1], 120, 120);
-    currentPiece.state[1] += 30;
-    var pieceArray = convertRepresentation(currentPiece);
-    drawPiece(ctx, currentPiece, pieceArray);
   }
 
 }());

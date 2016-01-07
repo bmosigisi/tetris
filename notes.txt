@@ -1,3 +1,7 @@
 On Collision detection:
 
 Check the longest sequence of ones in the lowest row and check against the coinciding location directly below in the grid, to detect collision. This will ensure that pieces which have a "long neck" can continue dropping.
+
+Optimize so that draw only occurs when a change has occured.
+
+Improve get random block function: bottle neck in system.
