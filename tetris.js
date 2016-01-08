@@ -73,6 +73,17 @@ window.onload = (function() {
   var beginningTime, actionChanged, currentPiece, nextPiece, nextChanged;
   // actions: up, right, left, down.
   var actions = new Array(4);
+  var grid = new Array(18);
+  var gridChanged = false;
+
+  (function(){
+    for(var i = 0; i < 18; i++) {
+      grid[i] = new Array(10);
+      for(var j = 0; j < 10; j++) {
+        grid[i][j] = [0, ''];
+      }
+    }
+  })();
 
   // Get a random block from the selection.
   var getRandomBlock = function() {
@@ -114,7 +125,6 @@ window.onload = (function() {
   function init() {
     currentPiece = getRandomBlock();
     currentPiece.state = [90, 0, 0];
-    currentPiece.previousState = [90, 0, 0];
     nextPiece = getRandomBlock();
     document.onkeydown = getPressedKey;
     actionChanged = false;
@@ -130,7 +140,7 @@ window.onload = (function() {
         drop();
       }
     }
-    draw();
+    updateGrid();
     window.requestAnimationFrame(startGame);
   }
 
@@ -203,7 +213,11 @@ window.onload = (function() {
     for (var i = 0; i < 4; i++) {
       if (actions[i]) {
         if (i === 0) {
-          rotate();
+          if (currentPiece.state[2] === 3) {
+            currentPiece.state[2] = 0;
+          } else {
+            currentPiece.state[2]++;
+          }
         } else if (i === 1) {
           currentPiece.state[0] += 30;
         } else if (i === 2) {
@@ -213,23 +227,13 @@ window.onload = (function() {
         }
       }
     }
+    // also check if the new state causes collisions.
     if (!checkBounds()) {
       currentPiece.state = temp;
     }
     resetActions();
     actionChanged = false;
-  }
-
-  /**
-   * Rotate the current piece.
-   * Involves changing the rotation index.
-   */
-  function rotate() {
-    if (currentPiece.state[2] === 3) {
-      currentPiece.state[2] = 0;
-    } else {
-      currentPiece.state[2]++;
-    }
+    gridChanged = true;
   }
 
   /**
@@ -304,32 +308,45 @@ window.onload = (function() {
    */
   function drop() {
     currentPiece.state[1] += 30;
+    gridChanged = true;
   }
 
   // Draw a single block, somewhere on the grid.
-  function drawColourBlock(context, x, y, color) {
+  function drawBlock(context, x, y, color) {
     context.fillStyle = color;
     context.fillRect(x + 1, y + 1, 28, 28);
   }
 
-  // Draw a single block, somewhere on the grid.
-  function clearBlock(context, x, y) {
-    context.clearRect(x, y, 30, 30);
+  /**
+   * Reset the grid.
+   */
+  function resetGrid() {
+    for(var i = 0; i < 18; i++) {
+      for(var j = 0; j < 10; j++) {
+        grid[i][j][0] = 0;
+      }
+    }
   }
 
   /**
-   * Draw the current piece.
+   * Check whether the grid has changed. If it has, update it.
    */
-  function drawPiece(x, y, color, drawer) {
-    var pieceArray = convertRepresentation(currentPiece);
-    for (var i = 0; i < 4; i++) {
-      for (var j = 0; j < 4; j++) {
-        if (pieceArray[i][j]) {
-          var tempx = (j * 30) + x;
-          var tempy = (i * 30) + y;
-          drawer(ctx, tempx, tempy, color);
+  function updateGrid() {
+    if (gridChanged) {
+      resetGrid();
+      // get current piece and update grid.
+      var pieceArray = convertRepresentation(currentPiece);
+      for (var i = 0; i < 4; i++) {
+        for (var j = 0; j < 4; j++) {
+          if (pieceArray[i][j]) {
+            var x = (j * 30) + currentPiece.state[0];
+            var y = (i * 30) + currentPiece.state[1];
+            grid[(y/30)][(x/30)] = [1, currentPiece.color];
+          }
         }
       }
+      gridChanged = false;
+      draw();
     }
   }
 
@@ -345,15 +362,13 @@ window.onload = (function() {
    * Draws both the main grid and the pieces.
    */
   function draw() {
-    // Clear the previous piece location
-    drawPiece(currentPiece.previousState[0],
-     currentPiece.previousState[1], 'white', clearBlock);
-    // draw current piece.
-    drawPiece(currentPiece.state[0], currentPiece.state[1],
-      currentPiece.color, drawColourBlock);
-    currentPiece.previousState = currentPiece.state.slice(0, 3);
-    if (nextChanged) {
-      drawNext();
+    ctx.clearRect(0, 0, 300, 540);
+    for (var i = 0; i < 18; i++) {
+      for (var j = 0; j < 10; j++) {
+        if (grid[i][j][0]) {
+          drawBlock(ctx, j * 30, i * 30, grid[i][j][1]);
+        }
+      }
     }
   }
 
