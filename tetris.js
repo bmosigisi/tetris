@@ -75,12 +75,16 @@ window.onload = (function() {
   var actions = new Array(4);
   var grid = new Array(18);
   var gridChanged = false;
+  var persistentGrid = new Array(18);
+  var persistentGridChanged = false;
 
-  (function(){
-    for(var i = 0; i < 18; i++) {
+  (function() {
+    for (var i = 0; i < 18; i++) {
       grid[i] = new Array(10);
-      for(var j = 0; j < 10; j++) {
+      persistentGrid[i] = new Array(10);
+      for (var j = 0; j < 10; j++) {
         grid[i][j] = [0, ''];
+        persistentGrid[i][j] = [0, ''];
       }
     }
   })();
@@ -128,6 +132,8 @@ window.onload = (function() {
     nextPiece = getRandomBlock();
     document.onkeydown = getPressedKey;
     actionChanged = false;
+    initializeCurrent();
+    drawNext();
   }
 
   function startGame(timeStamp) {
@@ -170,6 +176,22 @@ window.onload = (function() {
     }
 
     return pieceArray;
+  }
+
+  /**
+   * Set the state of the current piece.
+   * Ensures that all pieces start at the very top.
+   */
+  function initializeCurrent() {
+    var pieceArray = convertRepresentation(currentPiece);
+    // Find top-most piece.
+    for (var i = 0; i < 4; i++) {
+      if (pieceArray[i].indexOf(1) !== -1) {
+        break;
+      }
+    }
+    currentPiece.state = [90, 0 - (30 * i), 0];
+    gridChanged = true;
   }
 
   /**
@@ -220,7 +242,7 @@ window.onload = (function() {
           }
         } else if (i === 1) {
           currentPiece.state[0] += 30;
-        } else if (i === 2) {
+        } else if (i === 2 && checkBottomBounds()) {
           currentPiece.state[1] += 30;
         } else if (i === 3) {
           currentPiece.state[0] -= 30;
@@ -254,7 +276,6 @@ window.onload = (function() {
     if ((rightMostIndex * 30) + currentPiece.state[0] + 30 > 300) {
       return false;
     }
-    console.log('current state: ', currentPiece.state);
 
     // get left most piece.
     leftMostIndex = 3;
@@ -268,7 +289,7 @@ window.onload = (function() {
       return false;
     }
 
-    return checkBottomBounds();
+    return true;
   }
 
   /**
@@ -283,7 +304,7 @@ window.onload = (function() {
         // find the lowest cell in the piece
         if (pieceArray[i][j]) {
           // check if current cell is within field
-          if ((i * 30) + currentPiece.state[1] >= 510) {
+          if ((i * 30) + currentPiece.state[1] > 480) {
             return false;
           }
         }
@@ -300,7 +321,15 @@ window.onload = (function() {
    * Also swaps current with next piece incase of collision.
    */
   function checkCollisions() {
-    return checkBottomBounds();
+    if (checkBottomBounds()) {
+      return true;
+    }
+    updatePersistentGrid();
+    currentPiece = nextPiece;
+    nextPiece = getRandomBlock();
+    initializeCurrent();
+    drawNext();
+    return false;
   }
 
   /**
@@ -321,11 +350,12 @@ window.onload = (function() {
    * Reset the grid.
    */
   function resetGrid() {
-    for(var i = 0; i < 18; i++) {
-      for(var j = 0; j < 10; j++) {
-        grid[i][j][0] = 0;
+    for (var i = 0; i < 18; i++) {
+      for (var j = 0; j < 10; j++) {
+        grid[i][j] = [0, ''];
       }
     }
+    return grid;
   }
 
   /**
@@ -333,7 +363,7 @@ window.onload = (function() {
    */
   function updateGrid() {
     if (gridChanged) {
-      resetGrid();
+      var grid = resetGrid();
       // get current piece and update grid.
       var pieceArray = convertRepresentation(currentPiece);
       for (var i = 0; i < 4; i++) {
@@ -341,7 +371,7 @@ window.onload = (function() {
           if (pieceArray[i][j]) {
             var x = (j * 30) + currentPiece.state[0];
             var y = (i * 30) + currentPiece.state[1];
-            grid[(y/30)][(x/30)] = [1, currentPiece.color];
+            grid[(y / 30)][(x / 30)] = [1, currentPiece.color];
           }
         }
       }
@@ -350,11 +380,34 @@ window.onload = (function() {
     }
   }
 
+  function updatePersistentGrid() {
+    // get current piece and update grid.
+    var pieceArray = convertRepresentation(currentPiece);
+    for (var i = 0; i < 4; i++) {
+      for (var j = 0; j < 4; j++) {
+        if (pieceArray[i][j]) {
+          var x = (j * 30) + currentPiece.state[0];
+          var y = (i * 30) + currentPiece.state[1];
+          persistentGrid[(y / 30)][(x / 30)] = [1, currentPiece.color];
+        }
+      }
+    }
+  }
+
   /**
    * Draw the next piece.
    */
   function drawNext() {
-
+    ctxNext.clearRect(0, 0, 196, 200);
+    nextPiece.state = [30, 35, 0];
+    var pieceArray = convertRepresentation(nextPiece);
+    for (var i = 0; i < 4; i++) {
+      for (var j = 0; j < 4; j++) {
+        if (pieceArray[i][j]) {
+          drawBlock(ctxNext, j * 30 + nextPiece.state[0], i * 30 + nextPiece.state[1], nextPiece.color);
+        }
+      }
+    }
   }
 
   /**
@@ -363,6 +416,13 @@ window.onload = (function() {
    */
   function draw() {
     ctx.clearRect(0, 0, 300, 540);
+    for (var i = 0; i < 18; i++) {
+      for (var j = 0; j < 10; j++) {
+        if (persistentGrid[i][j][0]) {
+          drawBlock(ctx, j * 30, i * 30, persistentGrid[i][j][1]);
+        }
+      }
+    }
     for (var i = 0; i < 18; i++) {
       for (var j = 0; j < 10; j++) {
         if (grid[i][j][0]) {

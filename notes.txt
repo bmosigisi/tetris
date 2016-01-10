@@ -5,3 +5,5 @@ Check the longest sequence of ones in the lowest row and check against the coinc
 Optimize so that draw only occurs when a change has occured.
 
 Improve get random block function: bottle neck in system.
+
+Manage collisions on a micro level.
