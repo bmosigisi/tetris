@@ -1,5 +1,6 @@
-window.onload = (function() {
+import { PLAYGROUND_WIDTH, PLAYGROUND_HEIGHT, TETROMINO_CELL_WIDTH } from './modules/constants.js';
 
+const game = function () {
   // Include request animation polyfill
   (function() {
     var lastTime = 0;
@@ -29,7 +30,6 @@ window.onload = (function() {
 
   /** 
    * Tetrominoes block variables
-   * Should also store a state property tracking x, y, and rotation index.
    */
   var blocks = {
     l: {
@@ -128,6 +128,7 @@ window.onload = (function() {
    */
   function init() {
     currentPiece = getRandomBlock();
+    // State property tracks the x, y positions and rotation index.
     currentPiece.state = [90, 0, 0];
     nextPiece = getRandomBlock();
     document.onkeydown = getPressedKey;
@@ -241,11 +242,11 @@ window.onload = (function() {
             currentPiece.state[2]++;
           }
         } else if (i === 1) {
-          currentPiece.state[0] += 30;
+          currentPiece.state[0] += TETROMINO_CELL_WIDTH;
         } else if (i === 2 && checkBottomBounds()) {
-          currentPiece.state[1] += 30;
+          currentPiece.state[1] += TETROMINO_CELL_WIDTH;
         } else if (i === 3) {
-          currentPiece.state[0] -= 30;
+          currentPiece.state[0] -= TETROMINO_CELL_WIDTH;
         }
       }
     }
@@ -273,7 +274,7 @@ window.onload = (function() {
         }
       }
     }
-    if ((rightMostIndex * 30) + currentPiece.state[0] + 30 > 300) {
+    if ((rightMostIndex * TETROMINO_CELL_WIDTH) + currentPiece.state[0] + TETROMINO_CELL_WIDTH > PLAYGROUND_WIDTH) {
       return false;
     }
 
@@ -285,7 +286,7 @@ window.onload = (function() {
         leftMostIndex = pieceArray[i].indexOf(1);
       }
     }
-    if ((leftMostIndex * 30) + currentPiece.state[0] < 0) {
+    if ((leftMostIndex * TETROMINO_CELL_WIDTH) + currentPiece.state[0] < 0) {
       return false;
     }
 
@@ -304,7 +305,7 @@ window.onload = (function() {
         // find the lowest cell in the piece
         if (pieceArray[i][j]) {
           // check if current cell is within field
-          if ((i * 30) + currentPiece.state[1] > 480) {
+          if ((i * TETROMINO_CELL_WIDTH) + currentPiece.state[1] > 480) {
             return false;
           }
         }
@@ -336,7 +337,7 @@ window.onload = (function() {
    * Drop the current piece down once.
    */
   function drop() {
-    currentPiece.state[1] += 30;
+    currentPiece.state[1] += TETROMINO_CELL_WIDTH;
     gridChanged = true;
   }
 
@@ -369,9 +370,9 @@ window.onload = (function() {
       for (var i = 0; i < 4; i++) {
         for (var j = 0; j < 4; j++) {
           if (pieceArray[i][j]) {
-            var x = (j * 30) + currentPiece.state[0];
-            var y = (i * 30) + currentPiece.state[1];
-            grid[(y / 30)][(x / 30)] = [1, currentPiece.color];
+            var x = (j * TETROMINO_CELL_WIDTH) + currentPiece.state[0];
+            var y = (i * TETROMINO_CELL_WIDTH) + currentPiece.state[1];
+            grid[(y / TETROMINO_CELL_WIDTH)][(x / TETROMINO_CELL_WIDTH)] = [1, currentPiece.color];
           }
         }
       }
@@ -386,9 +387,9 @@ window.onload = (function() {
     for (var i = 0; i < 4; i++) {
       for (var j = 0; j < 4; j++) {
         if (pieceArray[i][j]) {
-          var x = (j * 30) + currentPiece.state[0];
-          var y = (i * 30) + currentPiece.state[1];
-          persistentGrid[(y / 30)][(x / 30)] = [1, currentPiece.color];
+          var x = (j * TETROMINO_CELL_WIDTH) + currentPiece.state[0];
+          var y = (i * TETROMINO_CELL_WIDTH) + currentPiece.state[1];
+          persistentGrid[(y / TETROMINO_CELL_WIDTH)][(x / TETROMINO_CELL_WIDTH)] = [1, currentPiece.color];
         }
       }
     }
@@ -404,7 +405,7 @@ window.onload = (function() {
     for (var i = 0; i < 4; i++) {
       for (var j = 0; j < 4; j++) {
         if (pieceArray[i][j]) {
-          drawBlock(ctxNext, j * 30 + nextPiece.state[0], i * 30 + nextPiece.state[1], nextPiece.color);
+          drawBlock(ctxNext, j * TETROMINO_CELL_WIDTH + nextPiece.state[0], i * TETROMINO_CELL_WIDTH + nextPiece.state[1], nextPiece.color);
         }
       }
     }
@@ -415,21 +416,23 @@ window.onload = (function() {
    * Draws both the main grid and the pieces.
    */
   function draw() {
-    ctx.clearRect(0, 0, 300, 540);
+    ctx.clearRect(0, 0, PLAYGROUND_WIDTH, PLAYGROUND_HEIGHT);
     for (var i = 0; i < 18; i++) {
       for (var j = 0; j < 10; j++) {
         if (persistentGrid[i][j][0]) {
-          drawBlock(ctx, j * 30, i * 30, persistentGrid[i][j][1]);
+          drawBlock(ctx, j * TETROMINO_CELL_WIDTH, i * TETROMINO_CELL_WIDTH, persistentGrid[i][j][1]);
         }
       }
     }
     for (var i = 0; i < 18; i++) {
       for (var j = 0; j < 10; j++) {
         if (grid[i][j][0]) {
-          drawBlock(ctx, j * 30, i * 30, grid[i][j][1]);
+          drawBlock(ctx, j * TETROMINO_CELL_WIDTH, i * TETROMINO_CELL_WIDTH, grid[i][j][1]);
         }
       }
     }
   }
 
-}());
+}();
+
+window.onload = (game());
